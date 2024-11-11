@@ -1,100 +1,148 @@
-import { Component, OnInit } from '@angular/core';
-
-declare var google: any;
-
-interface Marker {
-  position: {
-    lat: number;
-    lng: number;
-  };  
-  title: string;
-}
+import { Component, OnInit, AfterViewInit } from '@angular/core';
+import { Geolocation } from '@ionic-native/geolocation/ngx';
+import { LocationService } from '../services/location.service';
 
 @Component({
   selector: 'app-home',
   templateUrl: 'home.page.html',
   styleUrls: ['home.page.scss'],
 })
-export class HomePage implements OnInit {
-  constructor() {}
-  map = null;
-  directionsService = new google.maps.DirectionsService();
-  directionsDisplay = new google.maps.DirectionsRenderer();
+export class HomePage implements OnInit, AfterViewInit {
+  map!: google.maps.Map;
+  locations: any[] = [];
+  markers: google.maps.Marker[] = [];
 
-  origin = { lat: 0, lng: 0 };
-  destination = { lat: 10.370852835417077, lng: -74.47804527428855 };
+  constructor(
+    private geolocation: Geolocation,
+    private locationService: LocationService
+  ) {}
 
   ngOnInit(): void {
-    this.loadMap();
-    this.setCurrentLocationAsOrigin();
+    this.loadLocations();
   }
 
-  loadMap() {
-    // create a new map by passing HTMLElement
+  ngAfterViewInit(): void {
+    this.loadGoogleMaps();
+  }
+
+  loadGoogleMaps() {
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyCgdCkA-BQX8pAMjAB0i7ILl7aaXKYBVfw&callback=initMap&libraries=places&map_ids=7b980009a8cb280e`;
+    script.async = true;
+    script.defer = true;
+    (window as any).initMap = () => {
+      this.initMap();
+    };
+    document.head.appendChild(script);
+  }
+
+  initMap() {
     const mapEle: HTMLElement = document.getElementById('map')!;
-    const indicatorsEle: HTMLElement = document.getElementById('indicators')!;
-    // create map
     this.map = new google.maps.Map(mapEle, {
-      center: this.origin,
+      center: { lat: 10.3932, lng: -75.4832 }, // Coordenadas iniciales
       zoom: 12,
+      mapId: '7b980009a8cb280e' // Usar el Map ID válido aquí
     });
-
-    this.directionsDisplay.setMap(this.map);
-    this.directionsDisplay.setPanel(indicatorsEle);
-
     google.maps.event.addListenerOnce(this.map, 'idle', () => {
       mapEle.classList.add('show-map');
-      this.calculateRoute();
     });
   }
 
-  private setCurrentLocationAsOrigin() {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          this.origin = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          };
-          this.calculateRoute(); // Llama a calculateRoute después de obtener la ubicación
-        },
-        (error) => {
-          console.error('Error obteniendo la ubicación', error);
-        }
-      );
-    } else {
-      console.error('Geolocalización no es soportada por este navegador.');
-    }
+  loadLocations() {
+    this.locationService.getLocations().subscribe((data) => {
+      this.locations = data.map((e) => {
+        return {
+          id: e.payload.doc.id,
+          ...e.payload.doc.data(),
+        };
+      });
+      this.locations.forEach((location, index) => {
+        const marker = new google.maps.Marker({
+          position: { lat: location.lat, lng: location.lng },
+          map: this.map,
+        });
+        this.markers.push(marker);
+      });
+    });
   }
 
-  private calculateRoute() {
-    this.directionsService.route(
-      {
-        origin: this.origin,
-        destination: this.destination,
-        travelMode: google.maps.TravelMode.DRIVING,
-      },
-      (response: any, status: string) => {
-        if (status === google.maps.DirectionsStatus.OK) {
-          this.directionsDisplay.setDirections(response);
+  addCurrentLocation() {
+    this.geolocation
+      .getCurrentPosition()
+      .then((resp) => {
+        const location = {
+          lat: resp.coords.latitude,
+          lng: resp.coords.longitude,
+          name: 'Ubicación Actual'
+        };
+        this.locationService.addLocation(location).then((docRef) => {
+          const marker = new google.maps.Marker({
+            position: location,
+            map: this.map,
+          });
+          this.markers.push(marker);
+          this.map.setCenter(location);
+          this.findNearbyPlaces(location);
+        });
+      })
+      .catch((error) => {
+        console.log('Error getting location', error);
+      });
+  }
 
-          // Obtener la distancia del primer tramo (leg) de la ruta
-          const route = response.routes[0];
-          const leg = route.legs[0];
-          const distance = leg.distance.text;
+  findNearbyPlaces(location: { lat: number; lng: number }) {
+    const service = new google.maps.places.PlacesService(this.map);
+    const types = ['restaurant', 'cafe', 'bar']; // Tipos de POIs a buscar
 
-          console.log(
-            `La distancia desde el punto de origen hasta el punto final es: ${distance}`
-          );
-          // Puedes mostrar la distancia en el DOM si lo prefieres
-          const distanceElement = document.getElementById('distance');
-          if (distanceElement) {
-            distanceElement.innerText = `Distancia: ${distance}`;
-          }
-        } else {
-          console.error('Error al calcular la ruta:', status);
+    types.forEach((type) => {
+      const request = {
+        location: new google.maps.LatLng(location.lat, location.lng),
+        radius: 500, // Radio en metros para buscar POIs
+        type: type
+      };
+
+      service.nearbySearch(request, (results, status) => {
+        if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+          results.forEach((place) => {
+            if (place.geometry && place.geometry.location) {
+              const placeLocation = {
+                lat: place.geometry.location.lat(),
+                lng: place.geometry.location.lng(),
+                name: place.name
+              };
+              this.locationService.addLocation(placeLocation).then((docRef) => {
+                const marker = new google.maps.Marker({
+                  position: placeLocation,
+                  map: this.map,
+                });
+                this.markers.push(marker);
+              });
+            }
+          });
         }
-      }
-    );
+      });
+    });
+  }
+
+  deleteLocation(id: string, index: number) {
+    // Eliminar el marcador del mapa y de la lista de marcadores
+    this.markers[index].setMap(null);
+    this.markers.splice(index, 1);
+
+    // Eliminar la ubicación de la lista de ubicaciones
+    this.locations = this.locations.filter(location => location.id !== id);
+
+    // Eliminar la ubicación de Firebase Firestore
+    this.locationService.deleteLocation(id).catch((error) => {
+      console.error('Error eliminando la ubicación de Firestore:', error);
+    });
+  }
+
+  deleteAllLocations() {
+    this.locationService.deleteAllLocations().then(() => {
+      this.markers.forEach(marker => marker.setMap(null));
+      this.markers = [];
+      this.loadLocations();
+    });
   }
 }

@@ -1,58 +1,63 @@
-#container {
-  text-align: center;
-
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-#container strong {
-  font-size: 20px;
-  line-height: 26px;
-}
-
-#container p {
-  font-size: 16px;
-  line-height: 22px;
-
-  color: #ffffff;
-
-  margin: 0;
-}
-
-#container a {
-  text-decoration: none;
-}
-
-ion-content {
-  #map {
-    width: 100%;
-    height: 100%;
-    opacity: 0;
-    transition: opacity 150ms ease-in;
-    display: block;
-    &.show-map {
-      opacity: 1;
-    }
-  }
-}
-
-#indicators {
-  padding: 16px;
-  height: 40%;
+#map {
+  height: 50vh;
   width: 100%;
-  overflow-y: auto;
-  display: block;
-  background-color: white;
-  border-top: 1px solid black;
+  border-radius: 10px;
+  margin: 10px;
+}
+ion-title {
+  font-size: 1.5em;
+  font-weight: bold;
+  color: white;
 }
 
-#distance {
-  font-size: 20px;
-  line-height: 26px;
-  margin: 0;
-  background-color: #ffffff;
-  color: black;
+ion-card-title {
+  font-size: 1.2em;
+  font-weight: bold;
+  color: #000000;
+}
+ion-list{
+  background-color: white;
+}
+ion-content {
+  --background: #f0f0f5;
+}
+
+ion-card {
+  margin: 10px;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+ion-card-title {
+  font-size: 1.2em;
+  font-weight: bold;
+}
+
+ion-item {
+  --background: #ffffff;
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+
+ion-item ion-label {
+  color: #000000;
+  border-color: #000000;
+}
+
+
+ion-label h2 {
+  color: #000000;
+}
+
+ion-label p {
+  color: #666666;
+}
+
+ion-button {
+  --border-radius: 10px;
+}
+
+ion-fab-button {
+  --background: #3880ff;
+  z-index: 10; /* Asegúrate de que el botón esté encima del panel */
 }

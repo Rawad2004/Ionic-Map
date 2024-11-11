@@ -1,11 +1,35 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
-    <ion-title> Maps For Ionic </ion-title>
+    <ion-title>Ionic Con Google Maps Cloud Api</ion-title>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true">
   <div id="map"></div>
-  <div id="indicators"></div>
-  <div id="distance"></div>
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>Ubicaciones Guardadas</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-list>
+        <ion-item *ngFor="let location of locations; let i = index">
+          <ion-label>
+            <h2>{{ location.name }}</h2>
+            <p>Lat: {{ location.lat }}, Lng: {{ location.lng }}</p>
+          </ion-label>
+          <ion-button color="danger" (click)="deleteLocation(location.id, i)">
+            <ion-icon slot="icon-only" name="trash"></ion-icon>
+          </ion-button>
+        </ion-item>
+      </ion-list>
+      <ion-button expand="full" color="danger" (click)="deleteAllLocations()">
+        Eliminar Todas las Ubicaciones
+      </ion-button>
+    </ion-card-content>
+  </ion-card>
+  <ion-fab vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button (click)="addCurrentLocation()">
+      <ion-icon name="add"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
 </ion-content>
