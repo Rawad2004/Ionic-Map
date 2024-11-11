@@ -1,0 +1,7 @@
+{
+  "name": "Parcial-Map",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular"
+}
